@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Import pages
+import 'ui/pages/home_page.dart';
+import 'ui/pages/ai_chat_page.dart';
+import 'ui/pages/notifications_page.dart';
+import 'ui/pages/track_record_page.dart';
+import 'ui/pages/map_page.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -16,7 +23,11 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: 'Supabase Plain Login', home: LoginScreen());
+    return MaterialApp(
+      title: 'Supabase Login + Navbar',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: LoginScreen(),
+    );
   }
 }
 
@@ -38,28 +49,25 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await _supabase
           .from('authorize')
           .select()
-          .eq('username', username) // ⚠️ must match DB column name exactly
-          .eq('password', password) // ⚠️ must match DB column name exactly
+          .eq('username', username)
+          .eq('password', password)
           .maybeSingle();
 
-      // Debug logs
-      print('👉 Query with username="$username" password="$password"');
-      print('👉 Supabase response: $response');
-
       if (response == null || response.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Invalid username or password')));
-      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Successful! Welcome $username')),
+          SnackBar(content: Text('Invalid username or password')),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainPage(username: username)),
         );
       }
     } catch (error) {
       print('❌ Supabase error: $error');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Login failed. Check console.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed. Check console.')),
+      );
     }
   }
 
@@ -84,6 +92,54 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(onPressed: _login, child: Text('Login')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 📌 Main Page with 5 Navbar Tabs
+class MainPage extends StatefulWidget {
+  final String username;
+
+  const MainPage({Key? key, required this.username}) : super(key: key);
+
+  @override
+  _MainPageState createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  int _currentIndex = 0;
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      MapPage(),
+      AiChatPage(),
+      HomePage(username: widget.username),
+      TrackRecordPage(),
+      NotificationsPage(),
+      
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "AI Chat"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.timeline), label: "Track Record"),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Notification"),
+        ],
       ),
     );
   }
